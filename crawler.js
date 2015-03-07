@@ -48,6 +48,7 @@ var fetchQiita = function() {
 
   rl.on('line', function(line) {
     client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
+      sleep(1000);
       if (err) {
         console.log(err);
       } else {
