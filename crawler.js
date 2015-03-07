@@ -4,11 +4,59 @@
 var fs = require('fs'),
   async = require('async'),
   client = require('cheerio-httpcli'),
-  readline = require('readline');
+  readline = require('readline'),
+  document = require("jsdom").jsdom();
 
 var sleep = function(milliSeconds) {
   var startTime = new Date().getTime();
   while (new Date().getTime() < startTime + milliSeconds) {}
+};
+
+var filter_text = function($) {
+  if ($) {
+    return $.text();
+  }
+  return '';
+};
+
+var filter_str = function(str) {
+  if (str) {
+    return str;
+  }
+  return '';
+};
+
+var filter_number = function(str) {
+  if (isFinite(str)) {
+    return str;
+  }
+  return '';
+};
+
+var filter_size = function(size) {
+  if (size.match(/([\d\.x]+cm)/)) {
+    return size;
+  }
+  return '';
+};
+
+var filter_price = function(str) {
+  if (str) {
+    return str.replace(/\s|\\|,|￥/g, '');
+  }
+  return '';
+};
+
+var htmlUnescape = function(html) {
+  html = html.replace(/</g, '&amp;lt;').replace(/>/g, '&amp;gt;');
+  html = html.replace(/\"/g, '&amp;quot;').replace(/\'/g, '&amp;#39;');
+  var div = document.createElement('div');
+  div.innerHTML = '<pre>' + html + '</pre>';
+  return div.textContent !== undefined ? div.textContent : div.innerText;
+};
+
+var escape = function (str) {
+  return str.replace(/"/g, '\\"').replace(/\s/g, '');
 };
 
 var fetchQiitaList = function(page) {
@@ -47,8 +95,8 @@ var fetchQiita = function() {
     });
 
   rl.on('line', function(line) {
+    sleep(2000);
     client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
-      sleep(1000);
       if (err) {
         console.log(err);
       } else {
@@ -108,4 +156,60 @@ var fetchCalilList = function(page) {
   });
 };
 
-fetchCalilList(1);
+// fetchCalilList(1);
+
+var fetchCalil = function() {
+  var baseUrl = 'https://calil.jp',
+    rs = fs.ReadStream('./calil/url.txt'),
+    rl = readline.createInterface({
+      'input': rs,
+      'output': {}
+    });
+
+  rl.on('line', function(line) {
+    client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
+      if (err) {
+        console.log(err);
+      } else {
+        var description = $('[itemprop=description]').text().replace(/\s/g, ''),
+          data,
+          isbn = line.trim().slice(6),
+          amazonUrl = $('a.amazon_detail').attr('href'),
+          descriptionData;
+
+        data = '{"title":"' + filter_text($('.book_title')).replace(/\s/g, '') +
+          '","author":"' + filter_text($('.book_authors a:first-child')).replace(/(.+)\s+著/, "$1") +
+          '","publisher":"' + filter_text($('[itemprop=publisher]')) +
+          '","date":"' + filter_text($('[itemprop=datePublished]')).slice(1, -1) +
+          '","isbn":"' + isbn +
+          '","page":"' + filter_number(description.replace(/.+:(\d+)ページ.+/, "$1")) +
+          '","size":"' + filter_size(description.replace(/.+\/([\d\.x]+cm)ISBN.+/, "$1")) +
+          '","saleUrl":"' + filter_str(amazonUrl) +
+          '","imageUrl":"' + $('.largeimage').attr('src');
+        if (amazonUrl) {
+          client.fetch(amazonUrl, {}, function(err, $, res) {
+            if (err) {
+              console.log(err);
+            } else {
+              data += '","yen":"' +
+                filter_price($('span.a-size-medium.a-color-price.offer-price.a-text-normal').text());
+              client.fetch('http://www.amazon.co.jp/gp/aw/d/' + isbn + '/ref=mw_dp_mpd?er=1', {}, function(err, $, res) {
+                if (err) {
+                  console.log(err);
+                } else {
+                  descriptionData = $('table[color=#000000]+font').first().text();
+                  data += '","description":"' + escape(htmlUnescape(descriptionData)).slice(4) +
+                    '"},';
+                  fs.appendFile('./calil/book.json', data);
+                }
+              });
+            }
+          });
+        }
+      }
+    });
+  });
+  rl.resume();
+};
+
+fetchCalil();
