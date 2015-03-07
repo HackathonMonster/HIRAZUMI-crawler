@@ -27,7 +27,7 @@ var fetchQiitaList = function(page) {
     }
     $('.searchResult_itemTitle > a').each(function() {
       url = $(this).attr('href');
-      fs.appendFile('url1.txt', url + "\n");
+      fs.appendFile('./qiita/url.txt', url + "\n");
     });
 
 
@@ -40,7 +40,7 @@ var fetchQiitaList = function(page) {
 
 var fetchQiita = function() {
   var baseUrl = 'http://qiita.com',
-    rs = fs.ReadStream('url.txt'),
+    rs = fs.ReadStream('./qiita/url.txt'),
     rl = readline.createInterface({
       'input': rs,
       'output': {}
@@ -55,17 +55,22 @@ var fetchQiita = function() {
           flg = false,
           amazon = [],
           data;
-        console.log($('.itemsShowHeaderTitle_title').text());
         $article.find('a').each(function() {
           if ($(this).attr('href').match(/www\.amazon/)) {
             amazon.push($(this).attr('href'));
             flg = true;
           }
         });
-        // if (flg) {
-        //   data = '{"title":"' + $('.itemsShowHeaderTitle_title').text() +
-        //    '}';
-        // }
+        if (flg) {
+          data = '{"title":"' + $('.itemsShowHeaderTitle_title').text() +
+           '","article":"' + $article + '","amazon":"[';
+          amazon.forEach(function (ele, idx, arr) {
+            data += '"' + ele + '",';
+          });
+          data.slice(0, -1);
+          data += '},';
+          fs.appendFile('./qiita/article.json', data);
+        }
       }
     });
   });
