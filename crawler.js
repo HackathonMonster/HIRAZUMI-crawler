@@ -48,6 +48,7 @@ var fetchQiita = function() {
 
   rl.on('line', function(line) {
     client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
+      sleep(1000);
       if (err) {
         console.log(err);
       } else {
@@ -56,9 +57,11 @@ var fetchQiita = function() {
           amazon = [],
           data;
         $article.find('a').each(function() {
-          if ($(this).attr('href').match(/www\.amazon/)) {
-            amazon.push($(this).attr('href'));
-            flg = true;
+          if ($(this).attr('href')) {
+            if ($(this).attr('href').match(/www\.amazon/)) {
+              amazon.push($(this).attr('href'));
+              flg = true;
+            }
           }
         });
         if (flg) {
