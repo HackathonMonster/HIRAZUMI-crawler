@@ -56,15 +56,17 @@ var fetchQiita = function() {
           amazon = [],
           data;
         $article.find('a').each(function() {
-          if ($(this).attr('href').match(/www\.amazon/)) {
-            amazon.push($(this).attr('href'));
-            flg = true;
+          if ($(this).attr('href')) {
+            if ($(this).attr('href').match(/www\.amazon/)) {
+              amazon.push($(this).attr('href'));
+              flg = true;
+            }
           }
         });
         if (flg) {
           data = '{"title":"' + $('.itemsShowHeaderTitle_title').text() +
-           '","article":"' + $article + '","amazon":"[';
-          amazon.forEach(function (ele, idx, arr) {
+            '","article":"' + $article + '","amazon":"[';
+          amazon.forEach(function(ele, idx, arr) {
             data += '"' + ele + '",';
           });
           data.slice(0, -1);
@@ -77,6 +79,32 @@ var fetchQiita = function() {
   rl.resume();
 };
 
-fs.appendFile('article.txt', '[');
-fetchQiita(1);
-fs.appendFile('article.txt', ']');
+// fs.appendFile('article.txt', '[');
+// fetchQiita(1);
+// fs.appendFile('article.txt', ']');
+
+var fetchCalilList = function(page) {
+  // var baseUrl = 'https://calil.jp/category?c=%E3%82%B3%E3%83%B3%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF&sc=%E4%B8%80%E8%88%AC%E3%83%BB%E5%85%A5%E9%96%80%E6%9B%B8&page=1';
+  var baseUrl = 'https://calil.jp/category?c=%E3%82%B3%E3%83%B3%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF&sc=%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3%83%B3%E3%82%B0';
+
+  console.log(page);
+
+  client.fetch(baseUrl, {
+    page: page
+  }, function(err, $, res) {
+    var $article = $('.thumb_cage'),
+      articleSize = $article.length;
+
+    if (articleSize <= 0) {
+      return;
+    }
+    $article.each(function() {
+      url = $(this).children('a').attr('href');
+      fs.appendFile('./calil/url.txt', url + "\n");
+    });
+    if (10 <= articleSize)
+      fetchCalilList(++page);
+  });
+};
+
+fetchCalilList(1);
