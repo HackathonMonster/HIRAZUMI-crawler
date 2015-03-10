@@ -1,0 +1,5 @@
+# crondへの登録は以下のコマンドを利用すること(crontab -eは禁止)
+# crontab ./cron
+
+# 毎日3時23分にQiitaスクレイピング
+23 3 * * * node ./qiita.js

@@ -1,6 +1,6 @@
 {
   "name": "HIRAZUMI-crawler",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "start": "node ./crawler.js"
@@ -8,10 +8,8 @@
   "dependencies": {
     "async": "^0.9.0",
     "cheerio-httpcli": "^0.3.1",
+    "date-utils": "^1.2.16",
     "debug": "~2.1.1",
-    "jsdom": "^4.0.2",
-    "readline": "0.0.7",
-    "request": "^2.53.0",
-    "sleep-async": "^1.0.1"
+    "temporal": "^0.4.0"
   }
 }

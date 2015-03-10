@@ -4,8 +4,7 @@
 var fs = require('fs'),
   async = require('async'),
   client = require('cheerio-httpcli'),
-  readline = require('readline'),
-  document = require('jsdom').jsdom();
+  readline = require('readline');
 
 var sleep = function(milliSeconds) {
   var startTime = new Date().getTime();
@@ -55,80 +54,10 @@ var htmlUnescape = function(html) {
   return div.textContent !== undefined ? div.textContent : div.innerText;
 };
 
-var escape = function (str) {
+var escape = function(str) {
   return str.replace(/"/g, '\\"').replace(/\s/g, '');
 };
 
-var fetchQiitaList = function(page) {
-  // var baseUrl = 'http://qiita.com/search?page=1&q=%E6%9C%AC&sort=rel&utf8=%E2%9C%93';
-  var baseUrl = 'http://qiita.com/search?page=1&q=%E6%9B%B8%E7%B1%8D&sort=rel&utf8=%E2%9C%93';
-
-  console.log(page);
-
-  client.fetch(baseUrl, {
-    page: page
-  }, function(err, $, res) {
-    var articleSize = $('.searchResult').length;
-
-    if (articleSize <= 0) {
-      return;
-    }
-    $('.searchResult_itemTitle > a').each(function() {
-      url = $(this).attr('href');
-      fs.appendFile('./qiita/url.txt', url + "\n");
-    });
-
-
-    if (10 <= articleSize)
-      fetchQiitaList(++page);
-  });
-};
-
-// fetchQiitaList(1);
-
-var fetchQiita = function() {
-  var baseUrl = 'http://qiita.com',
-    rs = fs.ReadStream('./qiita/url.txt'),
-    rl = readline.createInterface({
-      'input': rs,
-      'output': {}
-    });
-
-  rl.on('line', function(line) {
-    client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
-      if (err) {
-        console.log(err);
-      } else {
-        var $article = $('[itemprop=articleBody]'),
-          flg = false,
-          amazon = [],
-          data;
-        $article.find('a').each(function() {
-          if ($(this).attr('href')) {
-            if ($(this).attr('href').match(/www\.amazon/)) {
-              amazon.push($(this).attr('href'));
-              flg = true;
-            }
-          }
-        });
-        if (flg) {
-          data = '{"title":"' + $('.itemsShowHeaderTitle_title').text() +
-            '","article":"' + htmlUnescape($article).replace(/[\n\r]/g, '').replace(/"/g, '\\"') + '","isbn":[';
-          amazon.forEach(function(ele, idx, arr) {
-            data += '"' + ele.replace(/.+\/(\d{10})\/.*/, "$1") + '",';
-          });
-          data = data.slice(0, -1);
-          data += '],';
-          fs.appendFile('./qiita/article.json', data);
-          sleep(2000);
-        }
-      }
-    });
-  });
-  rl.resume();
-};
-
-fetchQiita(1);
 
 var fetchCalilList = function(page) {
   // 入門
@@ -169,49 +98,56 @@ var fetchCalil = function() {
       'output': {}
     });
 
-  rl.on('line', function(line) {
-    client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
-      if (err) {
-        console.log(err);
-      } else {
-        var description = $('[itemprop=description]').text().replace(/\s/g, ''),
-          data,
-          isbn = line.trim().slice(6),
-          amazonUrl = $('a.amazon_detail').attr('href'),
-          descriptionData;
+  async.forEachSeries(
+    fs.readFileSync('./qiita/url.txt').toString().split('\n'),
+    function(line, callback) {
+      client.fetch(baseUrl + line.trim(), {}, function(err, $, res) {
+        if (err) {
+          console.log(err);
+        } else {
+          var description = $('[itemprop=description]').text().replace(/\s/g, ''),
+            data,
+            isbn = line.trim().slice(6),
+            amazonUrl = $('a.amazon_detail').attr('href'),
+            descriptionData;
 
-        data = '{"title":"' + filter_text($('.book_title')).replace(/\s/g, '') +
-          '","author":"' + filter_text($('.book_authors a:first-child')) +
-          '","publisher":"' + filter_text($('[itemprop=publisher]')) +
-          '","date":"' + filter_text($('[itemprop=datePublished]')).slice(1, -1) +
-          '","isbn":"' + isbn +
-          '","page":' + filter_number(description.replace(/.+:(\d+)ページ.+/, "$1")) +
-          ',"size":"' + filter_size(description.replace(/.+\/([\d\.x]+cm)ISBN.+/, "$1")) +
-          '","shopUrl":"' + filter_str(amazonUrl) +
-          '","imageUrl":"' + $('.largeimage').attr('src');
-        if (amazonUrl) {
-          client.fetch(amazonUrl, {}, function(err, $, res) {
-            if (err) {
-              console.log(err);
-            } else {
-              data += '","yen":' +
-                filter_price($('span.a-size-medium.a-color-price.offer-price.a-text-normal').text());
-              client.fetch('http://www.amazon.co.jp/gp/aw/d/' + isbn + '/ref=mw_dp_mpd?er=1', {}, function(err, $, res) {
-                if (err) {
-                  console.log(err);
-                } else {
-                  descriptionData = $('table[color=#000000]+font').first().text();
-                  data += ',"description":"' + escape(htmlUnescape(descriptionData)).slice(4) +
-                    '"},';
-                  fs.appendFile('./calil/book.json', data);
-                }
-              });
-            }
-          });
+          data = '{"title":"' + filter_text($('.book_title')).replace(/\s/g, '') +
+            '","author":"' + filter_text($('.book_authors a:first')) +
+            '","publisher":"' + filter_text($('[itemprop=publisher]')) +
+            '","date":"' + filter_text($('[itemprop=datePublished]')).slice(1, -1) +
+            '","isbn":"' + isbn +
+            '","page":' + filter_number(description.replace(/.+:(\d+)ページ.+/, "$1")) +
+            ',"size":"' + filter_size(description.replace(/.+\/([\d\.x]+cm)ISBN.+/, "$1")) +
+            '","shopUrl":"' + filter_str(amazonUrl) +
+            '","imageUrl":"' + $('.largeimage').attr('src');
+          if (amazonUrl) {
+            client.fetch(amazonUrl, {}, function(err, $, res) {
+              if (err) {
+                console.log(err);
+              } else {
+                data += '","yen":' +
+                  filter_price($('span.a-size-medium.a-color-price.offer-price.a-text-normal').text());
+                client.fetch('http://www.amazon.co.jp/gp/aw/d/' + isbn + '/ref=mw_dp_mpd?er=1', {}, function(err, $, res) {
+                  if (err) {
+                    console.log(err);
+                  } else {
+                    descriptionData = $('table[color=#000000]+font').first().text();
+                    data += ',"description":"' + escape(htmlUnescape(descriptionData)).slice(4) +
+                      '"},';
+                    fs.appendFile('./calil/book.json', data);
+                    sleep(1000);
+                    callback();
+                  }
+                });
+              }
+            });
+          } else {
+            sleep(1000);
+            callback();
+          }
         }
-      }
+      });
     });
-  });
   rl.resume();
 };
 
