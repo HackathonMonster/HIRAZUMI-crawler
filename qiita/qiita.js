@@ -10,8 +10,8 @@ var async = require('async'),
   temporal = require('temporal');
 
 var first = false,
-  queryListName = './qiita/query.txt',
-  articleFileName = './qiita/results/' + (new Date()).toFormat('YYYYMMDDHH24MI') + '.json';
+  queryListName = './query.txt',
+  articleFileName = './results/' + (new Date()).toFormat('YYYYMMDDHH24MI') + '.json';
 
 var Qiita = {};
 
@@ -43,7 +43,7 @@ Qiita.fetchList = function(page, query) {
       return 0;
 
     result.$('.searchResult_itemTitle > a').each(function() {
-      Qiita.fetchArticle(result.$(this).attr('href'));
+      Qiita.fetchArticle(result.$(this).attr('href'), articleSize);
     });
 
     return articleSize;
@@ -62,13 +62,13 @@ Qiita.fetchArticle = function(articlePath) {
         var $article = result.$('[itemprop=articleBody]'),
           flg = false,
           anchor_tmp = '',
-          amazon = [],
+          isbn = [],
           json = {};
 
         $article.find('a').each(function() {
           anchor_tmp = result.$(this).attr('href');
           if (anchor_tmp && anchor_tmp.match(/www\.amazon/)) {
-            amazon.push(anchor_tmp.replace(/^.+\/(\d{10})\/.*$/, "$1"));
+            isbn.push(anchor_tmp.replace(/^.+\/(\d{10})\/.*$/, "$1"));
             flg = true;
           }
         });
@@ -77,7 +77,7 @@ Qiita.fetchArticle = function(articlePath) {
           json = JSON.stringify({
             title: result.$('.itemsShowHeaderTitle_title').text(),
             url: Qiita.host + articlePath,
-            isbn: amazon
+            isbn: isbn
           });
           Qiita.save(json);
         }
@@ -85,12 +85,8 @@ Qiita.fetchArticle = function(articlePath) {
     });
 };
 
-Qiita.save = function(json) {
-  if (!first) {
-    fs.appendFile(articleFileName, ",\n");
-  }
-  first = false;
-  fs.appendFile(articleFileName, json);
+Qiita.save = function(json, articleSize) {
+  fs.appendFile(articleFileName, json + ",\n");
 };
 
 /**
@@ -104,6 +100,10 @@ async.forEachSeries(
   function(line, callback) {
     if (line)
       Qiita.fetch(line);
+    callback();
+  },
+  function() {
+    console.log('pa');
+    fs.appendFileSync(articleFileName, ']');
   }
 );
-fs.appendFileSync(articleFileName, ']');
