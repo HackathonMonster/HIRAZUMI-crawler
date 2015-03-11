@@ -20,8 +20,11 @@ var db = mongoose.createConnection(process.env.MONGODB_URI, function(err, res) {
  */
 var QiitaSchema = new Schema({
   title: String,
-  url: String,
+  url: {
+    type: String,
+    unique: true
+  },
   isbn: [String]
 });
 
-exports.Qiita = mongoose.model('Qiita', QiitaSchema); 
+exports.Qiita = mongoose.model('Qiita', QiitaSchema);

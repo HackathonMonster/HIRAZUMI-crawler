@@ -3,20 +3,19 @@
 /**
  * Module dependencies
  */
-require('date-utils');
 var async = require('async'),
   client = require('cheerio-httpcli'),
   fs = require('fs'),
-  temporal = require('temporal');
+  temporal = require('temporal'),
+  model = require('../model');
 
-var first = false,
-  queryListName = './query.txt',
-  articleFileName = './results/' + (new Date()).toFormat('YYYYMMDDHH24MI') + '.json';
+var queryListName = './query.txt';
 
 var Qiita = {};
 
 Qiita.host = 'http://qiita.com';
 Qiita.searchDir = '/search';
+Qiita.model = model.Qiita;
 
 Qiita.fetch = function(query) {
   var page = 1;
@@ -43,7 +42,7 @@ Qiita.fetchList = function(page, query) {
       return 0;
 
     result.$('.searchResult_itemTitle > a').each(function() {
-      Qiita.fetchArticle(result.$(this).attr('href'), articleSize);
+      Qiita.fetchArticle(result.$(this).attr('href'));
     });
 
     return articleSize;
@@ -85,8 +84,10 @@ Qiita.fetchArticle = function(articlePath) {
     });
 };
 
-Qiita.save = function(json, articleSize) {
-  fs.appendFile(articleFileName, json + ",\n");
+Qiita.save = function(json) {
+  var qiita = new Qiita.model();
+  qiita = json;
+  qiita.save();
 };
 
 /**
@@ -94,16 +95,11 @@ Qiita.save = function(json, articleSize) {
  * node ./qiita.js
  */
 // module.exports = Qiita;
-fs.appendFileSync(articleFileName, '[');
 async.forEachSeries(
   fs.readFileSync(queryListName).toString().split('\n'),
   function(line, callback) {
     if (line)
       Qiita.fetch(line);
     callback();
-  },
-  function() {
-    console.log('pa');
-    fs.appendFileSync(articleFileName, ']');
   }
 );
