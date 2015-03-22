@@ -15,8 +15,6 @@ var first = false,
   articleFilePath = './qiita/results/' + articleFileName,
   model = require('../model');
 
-var queryListName = './query.txt';
-
 var Qiita = {};
 
 Qiita.host = 'http://qiita.com';
