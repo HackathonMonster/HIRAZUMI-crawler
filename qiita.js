@@ -11,7 +11,7 @@ var async = require('async'),
 
 var first = false,
   queryListName = './qiita/query.txt',
-  articleFileName = './qiita/results/' + (new Date()).toFomat('YYYYMMDDHH24MI') + '.json';
+  articleFileName = './qiita/results/' + (new Date()).toFormat('YYYYMMDDHH24MI') + '.json';
 
 var Qiita = {};
 
