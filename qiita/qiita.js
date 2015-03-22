@@ -3,7 +3,6 @@
 /**
  * Module dependencies
  */
-require('date-utils');
 var async = require('async'),
   client = require('cheerio-httpcli'),
   fs = require('fs'),
@@ -13,12 +12,16 @@ var async = require('async'),
 var first = false,
   queryListName = './qiita/query.txt',
   articleFileName = (new Date()).toFormat('YYYYMMDDHH24MI') + '.json',
-  articleFilePath = './qiita/results/' + articleFileName;
+  articleFilePath = './qiita/results/' + articleFileName,
+  model = require('../model');
+
+var queryListName = './query.txt';
 
 var Qiita = {};
 
 Qiita.host = 'http://qiita.com';
 Qiita.searchDir = '/search';
+Qiita.model = model.Qiita;
 
 Qiita.fetch = function(query) {
   var page = 1;
@@ -64,13 +67,13 @@ Qiita.fetchArticle = function(articleFilePath) {
         var $article = result.$('[itemprop=articleBody]'),
           flg = false,
           anchor_tmp = '',
-          amazon = [],
+          isbn = [],
           json = {};
 
         $article.find('a').each(function() {
           anchor_tmp = result.$(this).attr('href');
           if (anchor_tmp && anchor_tmp.match(/www\.amazon/)) {
-            amazon.push(anchor_tmp.replace(/^.+\/(\d{10})\/.*$/, "$1"));
+            isbn.push(anchor_tmp.replace(/^.+\/(\d{10})\/.*$/, "$1"));
             flg = true;
           }
         });
@@ -79,7 +82,7 @@ Qiita.fetchArticle = function(articleFilePath) {
           json = JSON.stringify({
             title: result.$('.itemsShowHeaderTitle_title').text(),
             url: Qiita.host + articleFilePath,
-            isbn: amazon
+            isbn: isbn
           });
           Qiita.save(json);
         }
@@ -88,11 +91,9 @@ Qiita.fetchArticle = function(articleFilePath) {
 };
 
 Qiita.save = function(json) {
-  if (!first) {
-    fs.appendFile(articleFilePath, ",\n");
-  }
-  first = false;
-  fs.appendFile(articleFilePath, json);
+  var qiita = new Qiita.model();
+  qiita = json;
+  qiita.save();
 };
 
 /**
@@ -106,6 +107,7 @@ async.forEachSeries(
   function(line, callback) {
     if (line)
       Qiita.fetch(line);
+    callback();
   }
 );
 fs.appendFileSync(articleFilePath, ']');

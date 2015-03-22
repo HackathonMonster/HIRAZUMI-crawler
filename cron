@@ -2,4 +2,4 @@
 # crontab ./cron
 
 # 毎日3時23分にQiitaスクレイピング
-23 3 * * * node ./qiita.js
+23 3 * * * node ./qiita/qiita.js
