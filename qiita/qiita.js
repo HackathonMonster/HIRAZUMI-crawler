@@ -7,6 +7,12 @@ var async = require('async'),
   client = require('cheerio-httpcli'),
   fs = require('fs'),
   temporal = require('temporal'),
+  azure = require('azure-storage');
+
+var first = false,
+  queryListName = './qiita/query.txt',
+  articleFileName = (new Date()).toFormat('YYYYMMDDHH24MI') + '.json',
+  articleFilePath = './qiita/results/' + articleFileName,
   model = require('../model');
 
 var queryListName = './query.txt';
@@ -52,8 +58,8 @@ Qiita.fetchList = function(page, query) {
 /**
  * fetch from Qiita user article
  */
-Qiita.fetchArticle = function(articlePath) {
-  client.fetch(Qiita.host + articlePath)
+Qiita.fetchArticle = function(articleFilePath) {
+  client.fetch(Qiita.host + articleFilePath)
     .then(function(result) {
       if (result.err) {
         console.log(result.err);
@@ -75,7 +81,7 @@ Qiita.fetchArticle = function(articlePath) {
         if (flg) {
           json = JSON.stringify({
             title: result.$('.itemsShowHeaderTitle_title').text(),
-            url: Qiita.host + articlePath,
+            url: Qiita.host + articleFilePath,
             isbn: isbn
           });
           Qiita.save(json);
@@ -95,6 +101,7 @@ Qiita.save = function(json) {
  * node ./qiita.js
  */
 // module.exports = Qiita;
+fs.appendFileSync(articleFilePath, '[');
 async.forEachSeries(
   fs.readFileSync(queryListName).toString().split('\n'),
   function(line, callback) {
@@ -103,3 +110,27 @@ async.forEachSeries(
     callback();
   }
 );
+fs.appendFileSync(articleFilePath, ']');
+saveToAzureBlob(articleFilePath, articleFileName);
+
+function saveToAzureBlob(filepath, filename){
+  var retryOperations = new azure.ExponentialRetryPolicyFilter();
+  var blobSvc = azure.createBlobService(
+      'hackm',
+      'jD7/dpCFj8QTcyoYxoWPVjheUtHyAxCcV3iKTCx1QsLrjnMyG6pw6RBVqTtByEe/VgH/cvtxlqi9JJGiCvaLJw==',
+      'hackm.blob.core.windows.net').withFilter(retryOperations);
+  var containerName = 'hirazumiairticle';
+  blobSvc.createContainerIfNotExists(containerName, function(error, result, response){
+    if(!error){
+      blobSvc.createBlockBlobFromLocalFile(containerName, 'qiita/'+filename, filepath, function(error, result, response){
+        if(!error){
+          // file uploaded
+        } else {
+          console.log(JSON.stringify(error));
+        }
+      });
+    } else {
+      console.log(JSON.stringify(error));
+    }
+  });
+}
