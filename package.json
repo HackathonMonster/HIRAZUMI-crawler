@@ -1,6 +1,7 @@
 {
   "name": "HIRAZUMI-crawler",
   "version": "1.0.0",
+  "private": true,
   "description": "HIRAZUMI crawler",
   "main": "index.js",
   "scripts": {
