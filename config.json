@@ -1,0 +1,4 @@
+{
+  "mongodbUrl": "mongodb://localhost/hirazumi",
+  "qiitaSearchWord": ["技術書", "参考書", "書籍", "本"]
+}
