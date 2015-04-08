@@ -15,6 +15,10 @@ var QiitaSchema = new Schema({
     require: true,
     unique: true
   },
+  author: {
+    name: String,
+    imageUrl: String
+  },
   description: String,
   isbn: [String],
   dateRegister: {
