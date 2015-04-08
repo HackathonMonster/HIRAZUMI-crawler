@@ -116,8 +116,7 @@ exports.update = function(query, callback) {
         if (!err && size === 0)
           fetchUserPage(url, function(err, qiita) {
             if (!err && qiita)
-            // qiita.save();
-              console.log(qiita);
+              qiita.save();
           });
       });
     },
