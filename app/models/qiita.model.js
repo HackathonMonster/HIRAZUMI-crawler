@@ -10,7 +10,11 @@ var mongoose = require('mongoose'),
 var QiitaSchema = new Schema({
   datePublished: Date,
   title: String,
-  url: String,
+  url: {
+    type: String,
+    require: true,
+    unique: true
+  },
   isbn: [String],
   dateRegister: {
     type: Date,
