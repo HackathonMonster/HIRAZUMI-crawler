@@ -15,6 +15,7 @@ var QiitaSchema = new Schema({
     require: true,
     unique: true
   },
+  description: String,
   isbn: [String],
   dateRegister: {
     type: Date,
