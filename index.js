@@ -36,6 +36,10 @@ process.on('exit', function() {
     process.exit(0);
   });
 });
+process.on('uncaughtException', function(err) {
+  console.log('Caught exception: ' + err);
+  process.exit(1);
+});
 
 // require models
 fs.readdirSync(__dirname + '/app/models').forEach(function(file) {
