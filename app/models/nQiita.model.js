@@ -7,26 +7,18 @@
 var mongoose = require('mongoose'),
   Schema = mongoose.Schema;
 
-var QiitaSchema = new Schema({
-  datePublished: Date,
-  title: String,
+var nQiitaSchema = new Schema({
   url: {
     type: String,
     require: true,
     unique: true
   },
-  author: {
-    name: String,
-    imageUrl: String
-  },
-  description: String,
-  isbn: [String],
   dateRegister: {
     type: Date,
     default: Date.now
   }
 }, {
-  collection: 'Qiita'
+  collection: 'nQiita'
 });
 
-module.exports = mongoose.model('Qiita', QiitaSchema);
+module.exports = mongoose.model('nQiita', nQiitaSchema);
