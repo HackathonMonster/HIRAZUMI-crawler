@@ -7,6 +7,7 @@
 var _ = require('lodash'),
   async = require('async'),
   config = require('../config'),
+  debug = require('debug')('crawler'),
   qiita = require('./controllers/qiita.controller');
 
 exports.start = function(callback) {
@@ -14,7 +15,11 @@ exports.start = function(callback) {
     if (config.qiitaSearchWord.length <= queryIdx)
       return callback();
     qiita.update(config.qiitaSearchWord[queryIdx], function(err, page) {
-      console.log(page);
+      if (err) {
+        console.log(err);
+        return callback(err);
+      }
+      debug(page);
       qiitaUpdate(++queryIdx);
     });
   };
