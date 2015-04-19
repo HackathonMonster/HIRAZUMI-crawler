@@ -5,13 +5,15 @@
   "description": "HIRAZUMI crawler",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node test/index.js"
   },
   "license": "MIT",
   "dependencies": {
     "async": "^0.9.0",
     "cheerio-httpcli": "^0.3.1",
     "mongoose": "^4.0.1",
-    "lodash": "~3.6.0"
+    "lodash": "~3.6.0",
+    "debug": "~2.1.3"
   }
 }
